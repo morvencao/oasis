@@ -1,0 +1,17 @@
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  labels:
+    app: example
+  name: example
+spec:
+  groups:
+  - system:nodes
+  - system:authenticated
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlIK01JR2xBZ0VBTUVNeEZUQVRCZ05WQkFvVERITjVjM1JsYlRwdWIyUmxjekVxTUNnR0ExVUVBeE1oYzNsegpkR1Z0T201dlpHVTZiV0ZsYzNSeWJ5MWpiMjUwY205c0xYQnNZVzVsTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJCnpqMERBUWNEUWdBRUpIRGxDUkU5RlVHWjRrT2pkQnBmZVdoNG0xMTE3TVRkYjlKVkpmVE5JYU1HSFJ5WDBDbEcKTFg1T2hSY0FscnpoUnNHQk9GdWw0TGYrWnJZTVJFZXFzS0FBTUFvR0NDcUdTTTQ5QkFNQ0EwZ0FNRVVDSVFDSgozMUFweGhZUWFQZEpBazIrYW9TVjRKbW5CTXF0b0VLejhtSDNlSXI3c0FJZ2FCK1dSOFdRdzZ6WXBIV0QrcmFsCnBjdHNCYm9naDNHQlRZQ0d3NEs5L0dnPQotLS0tLUVORCBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0K
+  signerName: kubernetes.io/kube-apiserver-client-kubelet
+  usages:
+  - digital signature
+  - key encipherment
+  - client auth
+  username: system:node:control-plane
