@@ -1,0 +1,68 @@
+@Library('ci-shared-lib') _
+
+pipeline {
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '30'))
+        timeout(time: 8, unit: 'HOURS')
+    }
+     agent {
+        docker {
+            image 'quay.io/stolostron/acm-qe:python3'
+            registryUrl 'https://quay.io/stolostron/acm-qe'
+            registryCredentialsId '0089f10c-7a3a-4d16-b5b0-3a2c9abedaa2'
+            args '--network host -u 0:0'
+        }
+    }
+    parameters {
+        string(name: 'AZURE_REGION', defaultValue: 'eastus', description: 'Region to deploy AKS.')
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Test branch, e.g. main, release-2.y')
+    }
+    environment {
+        REGION = "${params.AZURE_REGION}"
+        USER='acmqe'
+        SKIP_CONFIRM = 'true'
+    }
+    stages {
+        stage('Clean up workspace') {
+            steps {
+                script {
+                    echo "Clean up workspace"
+                    sh 'rm -rf aro-hcp'
+                }
+            }
+        }
+        stage('Pre-Undestroy') {
+            steps {
+                script{
+                    helpers.installAzureCli()
+                    withCredentials([file(credentialsId: 'thuyn-azure-sp', variable: 'azure_sp')]) {
+                        CLIENT_ID = sh(returnStdout: true, script: "cat $azure_sp | jq -r '.clientId'").trim()
+                        CLIENT_SECRET = sh(returnStdout: true, script: "cat $azure_sp | jq -r '.clientSecret'").trim()
+                        TENANT_ID = sh(returnStdout: true, script: "cat $azure_sp | jq -r '.tenantId'").trim()
+                        sh "az login --service-principal -u $CLIENT_ID -p $CLIENT_SECRET -t $TENANT_ID > /dev/null"
+                    }
+                    sh """
+                    echo "==== az version ===="
+                    az --version
+                    """
+                }
+            }
+        }
+        stage('Destrot-AKS-Clusters') {
+            steps {
+                script{
+                    sh """
+                    echo "==== clone aro-hcp ===="
+                    git clone -b "${params.GIT_BRANCH}" https://github.com/stolostron/ARO-HCP.git aro-hcp/
+                    echo "==== enter dev-infrastructure directory ===="
+                    cd aro-hcp/dev-infrastructure
+                    echo "==== deploy mgmt-cluster ===="
+                    AKSCONFIG=mgmt-cluster make clean
+                    echo "==== destroy svc-cluster ===="
+                    AKSCONFIG=svc-cluster make clean
+                    """
+                }
+            }
+        }
+    }
+}
